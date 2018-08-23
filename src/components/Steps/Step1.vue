@@ -37,6 +37,7 @@
       <popup-picker title="勘验单位" :data="unitList" v-model="kyUnitName"
         @on-show="onShow" @on-hide="onHide" @on-change="onChange" ></popup-picker>
       <x-input title="勘验人" v-model="kyrName" text-align="right"></x-input>
+      <popup-picker title="勘验人" :data='userList' v-model="kyrName" ></popup-picker>
       <popup-picker title="接警人" :data='userList' v-model="jjrName" ></popup-picker>
       <x-input title="其他接警人" v-model='jjrOther' text-align='right'></x-input>
       <popup-picker title="接警单位" :data="unitList" v-model="jjUnitName" ></popup-picker>
@@ -175,8 +176,9 @@ export default {
 
   },
   methods: {
-    gerFileUrl (oriFileUrl) {
-      return oriFileUrl.replace('68.61.8.125', '172.29.3.76:9219')
+    gerFileUrl (subStr) {
+      var subStr = new RegExp('(\d+)\.(\d+)\.(\d+)\.(\d+)(:(\d+)|)')
+      var result = url.replace(subStr, '172.29.3.76:9219')
     },
     getOriFiles () {
       let uuid = this.$store.getters.GetterEntity.uuid
@@ -225,52 +227,9 @@ export default {
       }).catch(err => {
         this.$vux.loading.hide()
         alert(err)
-      })
-        
+      })        
     }, 
-    saveInfo () {
-      let lightInfo = ''
-      if (this.lightList.length !== 0) {
-        this.lightList.forEach(function (item) {
-          lightInfo += item + '+'
-        })
-        lightInfo = lightInfo.substring(0, lightInfo.length - 1)
-      }
-      let entity = {
-        recordKyNo : this.recordKyNo,
-        recordJjNo : this.recordJjNo,
-        recordAjNo : this.recordAjNo,
-        kyrName : this.kyrName,
-        kyUnitName: this.kyUnitName,
-        jjrName: this.jjrName,
-        jjrOther: this.jjrOther,
-        kyUnitId: this.kyUnitId,
-        kyDate: this.kyDate,
-        afTime: this.afTime,
-        jjTime: this.bjTime,
-        kyksTime: this.kyksTime,
-        kyjsTime: this.kyjsTime,
-        recXz: this.recXz,
-        fsqy: this.fsqy,
-        xcwz: this.xcwz,
-        xczb: this.xcwzzb,
-        xctq: this.xctq,
-        xcfx: this.xcfx,
-        xcwd: this.xcwd,
-        xcsd: this.xcsd,
-        xcgz: lightInfo,
-        bhFlag: this.bhFlag ? 1 : 0,
-        bhrName: this.bhrName,
-        bhrUnitName: this.bhrUnitName,
-        bhrZw: this.bhrZw,
-        bhfs: this.bhfs,
-        xczk: this.xczk,
-        bdyy: this.bdyy
-      }
-      this.$store.commit(SET_RECORDBASE, entity)
-      this.$store.commit(SET_XCT, this.xctSrc)
-      this.$store.commit(SET_PMT, this.pmtSrc)
-    },
+
     fetchXct () {
       //this.saveInfo()
       Cordova.exec(this.onSuccessXct, this.onError, 'Interactive', 'shotMapInfo', [])      
@@ -280,25 +239,44 @@ export default {
       Cordova.exec(this.onSuccessPmt, this.onError, 'Interactive', 'shotMapInfo', [])
     },
     xctUpload () {
-      if(this.xctSrc !== ''){
-        var sendObj = {
-            localFileName: this.xctSrc,   //本地文件路径
-            fileType:1,        //文件类型，1是图片，2是视频，3是其他
-            isCompress:false      //是否压缩文件   
-        }
-        app.uploadFile(sendObj,function(res){
-            console.log("success_" , res)
+      if(this.xctSrc !== '' && this.xctSrc.substring(0, 4) !=='http'){
+        let that = this
+        var canvas = document.getElementById('xctCanvas')
+        var imgBase64 = canvas.toDataURL('image/jpeg')
+        var blob = this.convertImgDataToBlob(imgBase64)
+        var fd = new FormData();
+        fd.append('file', blob);//fileData为自定义    
+
+        this.$http({
+          url: 'http://20.97.6.109:5006/fileservicebyjmt/breakMultiUpload',
+          method: 'POST',
+          params: {
+            serviceID: this.$store.getters.GetterSysInfo.applyID,
+            key: 'xct',
+            isThumbnails: false
+          },
+          // headers: {
+          //   contentType: 'application/x-www-form-urlencoded',
+          //   requestType:'app',
+          //   AccessToken: this.$store.getters.GetterAccessToken,
+          //   ApplyID: this.$store.getters.GetterSysInfo.applyID,
+          //   SecretKey: this.$store.getters.GetterSysInfo.secretKey
+          // },
+          body: fd
+        }).then(function (res) {
+          alert(res)
+          let ret = JSON.parse(res)
+          if (ret.code === 200) {
             let picList = this.$store.getters.GetterFileList
             let needAdd = true
             picList.forEach(function(item){
               if(item.file_type === 2007){
                 needAdd = false
-                item.file_url = res.file_url
+                item.file_url = res.data.fileUrl
               }
             })
             if(needAdd){
               picList.push({
-                file_id: 0,
                 file_name: res.key,
                 file_path: '',
                 file_url: res.file_url,
@@ -306,46 +284,84 @@ export default {
                 file_type : '2007'
               })
             }
+            alert(JSON.stringify(picList))
             that.$store.commit(SET_RECORDFILES, picList)
-        },function(err){
-            alert("error_" + err);
-        })
+            alert("上传成功")
+            this.$vux.loading.hide()
+          } else {
+            this.$vux.loading.hide()
+            this.$vux.toast.show({
+              text: ret.cmd,
+              type: 'warn'
+            })
+          }
+        }).catch(err => {
+          this.$vux.loading.hide()
+          alert(err)
+        })        
       }
     },
     pmtUpload () {
-      if(this.pmtSrc !== ''){
-        var sendObj = {
-            localFileName: this.pmtSrc,   //本地文件路径
-            fileType:1,        //文件类型，1是图片，2是视频，3是其他
-            isCompress:false      //是否压缩文件   
-        }
-        alert(JSON.stringify(sendObj))
+      if(this.pmtSrc !== '' && this.pmtSrc.substring(0, 4) !=='http'){
+        let that = this
 
-        app.uploadFile(sendObj,function(res){
+        var canvas = document.getElementById('pmtCanvas')            
+        var imgBase64 = canvas.toDataURL('image/jpeg')        
+        var blob = this.convertImgDataToBlob(imgBase64)
+        var fd = new FormData()
+        fd.append('file', blob);//fileData为自定义
+
+        this.$http({
+          url: 'http://20.97.6.109:5006/fileservicebyjmt/breakMultiUpload',
+          method: 'POST',
+          params: {
+            serviceID: this.$store.getters.GetterSysInfo.applyID,
+            key: 'pmt',
+            isThumbnails: false
+          },
+          // headers: {
+          //   contentType: 'application/x-www-form-urlencoded',
+          //   requestType:'app',
+          //   AccessToken: this.$store.getters.GetterAccessToken,
+          //   ApplyID: this.$store.getters.GetterSysInfo.applyID,
+          //   SecretKey: this.$store.getters.GetterSysInfo.secretKey
+          // },
+          body: fd
+        }).then(function (res) {
           alert(res)
-          console.log("success_" , res)
-          let picList = this.$store.getters.GetterFileList
-          let needAdd = true
-          picList.forEach(function(item){
-            if(item.file_type === 2008){
-              needAdd = false
-              item.file_url = res.file_url
+          let ret = JSON.parse(res)
+            if (ret.code === 200) {
+              let picList = this.$store.getters.GetterFileList
+              let needAdd = true
+              picList.forEach(function(item){
+                if(item.file_type === 2008){
+                  needAdd = false
+                  item.file_url = res.data.fileUrl
+                }
+              })
+              if(needAdd){
+                picList.push({
+                  file_name: res.key,
+                  file_path: '',
+                  file_url: res.file_url,
+                  file_hint : 'pmt',
+                  file_type : '2008'
+                })
+              }
+              alert(JSON.stringify(picList))
+              that.$store.commit(SET_RECORDFILES, picList)
+              alert("上传成功")
+              this.$vux.loading.hide()
+            } else {
+              this.$vux.loading.hide()
+              this.$vux.toast.show({
+                text: ret.cmd,
+                type: 'warn'
+              })
             }
-          })
-          if(needAdd){
-            picList.push({
-              file_name: res.key,
-              file_path: '',
-              file_url: res.file_url,
-              file_hint : 'pmt',
-              file_type : '2008'
-            })
-          }
-          alert(JSON.stringify(picList))
-          that.$store.commit(SET_RECORDFILES, picList)
-          alert("上传成功")
-        },function(err){
-            alert("error_" + err);
+        }).catch(err => {
+          this.$vux.loading.hide()
+          alert(err)
         })
       }
     },
@@ -388,6 +404,40 @@ export default {
     pmtCancel: function () {
       this.pmtSrc = ''
       this.showpmtdiv = false;
+    },
+    convertImgDataToBlob: function(base64Data) {
+      var format = "image/jpeg";
+      var base64 = base64Data;
+      var code = window.atob(base64.split(",")[1]);
+      var aBuffer = new window.ArrayBuffer(code.length);
+      var uBuffer = new window.Uint8Array(aBuffer);
+      for(var i = 0; i < code.length; i++){
+          uBuffer[i] = code.charCodeAt(i) & 0xff ;
+      }
+
+      var blob=null;
+      try{
+          blob = new Blob([uBuffer], {type : format});
+      }
+      catch(e){
+          window.BlobBuilder = window.BlobBuilder ||
+          window.WebKitBlobBuilder ||
+          window.MozBlobBuilder ||
+          window.MSBlobBuilder;
+          if(e.name == 'TypeError' && window.BlobBuilder){
+              var bb = new window.BlobBuilder();
+              bb.append(uBuffer.buffer);
+              blob = bb.getBlob("image/jpeg");
+
+          }
+          else if(e.name == "InvalidStateError"){
+              blob = new Blob([aBuffer], {type : format});
+          }
+          else{
+
+          }
+      }        
+      return blob       
     },
     onError: function (result) {
     },    

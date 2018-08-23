@@ -150,12 +150,12 @@ export default {
             recordKyNo : this.$refs.chiledContent.recordKyNo,
             recordJjNo : this.$refs.chiledContent.recordJjNo,
             recordAjNo : this.$refs.chiledContent.recordAjNo,
-            kyrName : this.$refs.chiledContent.kyrName,
-            kyUnitName : this.$refs.chiledContent.kyUnitName,
+            kyrName : this.$refs.chiledContent.kyrName.length===0 ? '':this.$refs.chiledContent.kyrName[0],
+            kyUnitName : this.$refs.chiledContent.kyUnitName.length===0?'':this.$refs.chiledContent.kyUnitName[0],
             kyUnitId: this.$refs.chiledContent.kyUnit.length===0 ? '' : this.$refs.chiledContent.kyUnit[0],
-            jjrName: this.$refs.chiledContent.jjrName,
+            jjrName: this.$refs.chiledContent.jjrName.length===0?'':this.$refs.chiledContent.jjrName[0],
             jjrOther: this.$refs.chiledContent.jjrOther,
-            jjUnitName: this.$refs.chiledContent.jjUnitName,
+            jjUnitName: this.$refs.chiledContent.jjUnitName.length===0?'':this.$refs.chiledContent.jjUnitName[0],
             recTitle: this.$refs.chiledContent.recTitle,
             recXz: this.$refs.chiledContent.xz,
             fsqy: this.$refs.chiledContent.fsqy,
@@ -163,7 +163,7 @@ export default {
             xczb: this.$refs.chiledContent.xcwzzb,
             xctq: this.$refs.chiledContent.tq.length === 0 ? '' : this.$refs.chiledContent.tq[0],
 
-            ky_date: this.$refs.chiledContent.kyDate,
+            kyDate: this.$refs.chiledContent.kyDate,
             afTime: this.$refs.chiledContent.afTime,
             jjTime: this.$refs.chiledContent.bjTime,
             kyksTime: this.$refs.chiledContent.kyksTime,
@@ -174,13 +174,12 @@ export default {
             xcsd: this.$refs.chiledContent.sd.length === 0 ? '' : this.$refs.chiledContent.sd[0],
             xcgz: lightInfo,
             bhFlag: this.$refs.chiledContent.bhFlag ? 1 : 0,
-            bhr: this.$refs.chiledContent.bhr.length === '' ? 0 : this.$refs.chiledContent.bhr[0],
             bhrName: this.$refs.chiledContent.bhrName,            
             bhrUnitName: this.$refs.chiledContent.bhrUnitName,
             bhrZw: this.$refs.chiledContent.bhrzw,
-            bhfs: this.$refs.chiledContent.bhfs,
+            bhfs: this.$refs.chiledContent.bhfs.length=== 0 ? '' : this.$refs.chiledContent.bhfs[0],
             xczk: this.$refs.chiledContent.xczk.length === 0 ? '' : this.$refs.chiledContent.xczk[0],
-            bdyy: this.$refs.chiledContent.bdyy
+            bdyy: this.$refs.chiledContent.bdyy.length === 0 ? '' : this.$refs.chiledContent.bdyy[0]
           }
           this.$store.commit(SET_RECORDBASE, entity)
           this.$store.commit(SET_XCT, this.$refs.chiledContent.xctSrc)

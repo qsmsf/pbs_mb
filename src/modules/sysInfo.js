@@ -6,7 +6,8 @@ import {
 
 const state = {
   // 保存第一页数据
-  baseUrl: '',
+  //baseUrl: 'http://68.61.8.125/szga/',
+  baseUrl: 'http://172.29.3.76:9219/szga/',
   accessToken: '',
   applyID:'f2bc84811d084b2d830f75a78505a60f',
   secretKey:'928F7855D87F443B410A01D30169E7F3'

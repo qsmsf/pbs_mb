@@ -162,16 +162,16 @@ export default {
       },function(err){
           alert("error_" + err);
       })
-      var options = new FileUploadOptions();
-      options.fileKey = file.file_name;     //用于设置参数，服务端的Request字串
-      options.fileName = file.file_name;    //希望文件存储到服务器所用的文件名
-      options.mimeType = "image/jpeg";  //图片格式
+      // var options = new FileUploadOptions();
+      // options.fileKey = file.file_name;     //用于设置参数，服务端的Request字串
+      // options.fileName = file.file_name;    //希望文件存储到服务器所用的文件名
+      // options.mimeType = "image/jpeg";  //图片格式
 
-      var uri = encodeURI(_url + '/api/Files/MutilUpload')
-      this.$vux.loading.show({
-        text: '文件上传中'
-      })
-      xh.uploadFile(fileEntry.fullPath,uri,uploadOK,onFail,options)        
+      // var uri = encodeURI(_url + '/api/Files/MutilUpload')
+      // this.$vux.loading.show({
+      //   text: '文件上传中'
+      // })
+      // xh.uploadFile(fileEntry.fullPath,uri,uploadOK,onFail,options)        
         
     },
     addFileNew (res) {
@@ -232,7 +232,8 @@ export default {
         this.$vux.loading.hide()
     },    
     onGetFile (oriFileUrl) {
-      return oriFileUrl.replace('68.61.8.125', '172.29.3.76:9219')
+      var subStr = new RegExp('(\d+)\.(\d+)\.(\d+)\.(\d+)(:(\d+)|)')
+      var result = oriFileUrl.replace(subStr, '172.29.3.76:9219')
     },
     onRenderFileType (type) {
       switch (type) {
@@ -262,6 +263,40 @@ export default {
     onChangePicType (val, index) {
       this.uploaderFiles[index].file_type = val
     },
+    convertImgDataToBlob: function(base64Data) {
+      var format = "image/jpeg";
+      var base64 = base64Data;
+      var code = window.atob(base64.split(",")[1]);
+      var aBuffer = new window.ArrayBuffer(code.length);
+      var uBuffer = new window.Uint8Array(aBuffer);
+      for(var i = 0; i < code.length; i++){
+          uBuffer[i] = code.charCodeAt(i) & 0xff ;
+      }
+
+      var blob=null;
+      try{
+          blob = new Blob([uBuffer], {type : format});
+      }
+      catch(e){
+          window.BlobBuilder = window.BlobBuilder ||
+          window.WebKitBlobBuilder ||
+          window.MozBlobBuilder ||
+          window.MSBlobBuilder;
+          if(e.name == 'TypeError' && window.BlobBuilder){
+              var bb = new window.BlobBuilder();
+              bb.append(uBuffer.buffer);
+              blob = bb.getBlob("image/jpeg");
+
+          }
+          else if(e.name == "InvalidStateError"){
+              blob = new Blob([aBuffer], {type : format});
+          }
+          else{
+
+          }
+      }        
+      return blob       
+    }
   },
   data () {
     return {
